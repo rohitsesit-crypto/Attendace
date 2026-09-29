@@ -94,7 +94,7 @@ export default function AttendancePage() {
       navigator.geolocation.getCurrentPosition(
         (p) => resolve({ lat: p.coords.latitude, lng: p.coords.longitude }),
         () => reject(new Error("Please allow location access to submit attendance.")),
-        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+        { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }
       );
     });
 
@@ -102,10 +102,9 @@ export default function AttendancePage() {
     if (!selected) return setStatus({ type: "error", text: "Please select employee code." });
     if (!photo) return setStatus({ type: "error", text: "Please capture your photo." });
     setSubmitting(true);
-    setStatus({ type: "info", text: "Fetching live location..." });
+    setStatus({ type: "info", text: "Submitting attendance..." });
     try {
       const { lat, lng } = await getLocation();
-      setStatus({ type: "info", text: "Submitting attendance..." });
       const res = await fetch("/api/attendance", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -113,7 +112,7 @@ export default function AttendancePage() {
       });
       const d = await res.json();
       if (d.success) {
-        setStatus({ type: "success", text: d.message });
+        setStatus({ type: "success", text: "Submitted" });
         setPhoto(null);
         setEmpCode("");
       } else {
@@ -207,7 +206,7 @@ export default function AttendancePage() {
             disabled={submitting}
             className="w-full rounded-lg bg-indigo-600 py-3 font-semibold text-white hover:bg-indigo-700 disabled:opacity-60"
           >
-            {submitting ? "Please wait..." : "Submit Attendance"}
+            {submitting ? "Submitting..." : "Submit Attendance"}
           </button>
         </div>
       </div>
