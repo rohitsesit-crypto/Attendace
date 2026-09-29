@@ -20,6 +20,16 @@ export default function AttendancePage() {
   const streamRef = useRef<MediaStream | null>(null);
 
   const selected = employees.find((e) => e.empCode === empCode);
+  // Natural sort: SES/001, SES/002 ... SES/010 (numbers compared numerically, not as text)
+  const sortedEmployees = [...employees].sort((a, b) =>
+    a.empCode.localeCompare(b.empCode, undefined, { numeric: true, sensitivity: "base" })
+  );
+
+  const stopCamera = () => {
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current = null;
+    setCameraOn(false);
+  };
 
   useEffect(() => {
     fetch("/api/attendance")
@@ -32,12 +42,6 @@ export default function AttendancePage() {
       .finally(() => setLoadingUsers(false));
     return () => stopCamera();
   }, []);
-
-  const stopCamera = () => {
-    streamRef.current?.getTracks().forEach((t) => t.stop());
-    streamRef.current = null;
-    setCameraOn(false);
-  };
 
   const [cameraReady, setCameraReady] = useState(false);
 
@@ -140,7 +144,7 @@ export default function AttendancePage() {
             <label className={label}>Employee Code</label>
             <select className={input} value={empCode} onChange={(e) => setEmpCode(e.target.value)} disabled={loadingUsers}>
               <option value="">{loadingUsers ? "Loading..." : "Select employee code"}</option>
-              {employees.map((e) => (
+              {sortedEmployees.map((e) => (
                 <option key={e.empCode} value={e.empCode}>{e.empCode}</option>
               ))}
             </select>
