@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { loadUsers } from "@/app/lib/user";
 
 // Proxy to Google Apps Script Web App (avoids browser CORS issues).
 const SCRIPT_URL = process.env.GOOGLE_SCRIPT_URL ?? "";
+
+export const dynamic = "force-dynamic";
 
 function missingUrl() {
   return NextResponse.json(
@@ -10,15 +13,13 @@ function missingUrl() {
   );
 }
 
+/** Employee codes for the dropdown, served from the cache whenever possible. */
 export async function GET() {
-  if (!SCRIPT_URL) return missingUrl();
-  try {
-    const res = await fetch(`${SCRIPT_URL}?action=users`, { cache: "no-store", redirect: "follow" });
-    const data = await res.json();
-    return NextResponse.json(data);
-  } catch {
-    return NextResponse.json({ success: false, message: "Could not reach Apps Script" }, { status: 502 });
+  const { users, stale, error } = await loadUsers();
+  if (error && users.length === 0) {
+    return NextResponse.json({ success: false, message: error }, { status: 502 });
   }
+  return NextResponse.json({ success: true, users, stale, count: users.length });
 }
 
 export async function POST(req: NextRequest) {
